@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: myapp:dev
+        ports:
+        - containerPort: 8000
+          name: http-metrics
+       
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  labels:
+    app: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      name: http-metrics
+  type: LoadBalancer
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: myapp-monitor
+  labels:
+    release: prometheus # prometheus operator 와 같은 값
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 10s
